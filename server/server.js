@@ -4,27 +4,39 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 
 const app = express();
-app.use(cors());
+
+// Allow all origins (for testing) or restrict to your frontend URL
+app.use(cors({
+  origin: ["https://mymeet.vercel.app"], // replace with your Vercel URL
+  methods: ["GET", "POST"],
+  credentials: true
+}));
 
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
-    origin: "*", // allow all for now (you can restrict later)
-    methods: ["GET", "POST"]
+    origin: ["https://mymeet.vercel.app"], // frontend URL
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
-io.on("connection", (socket) => {
+io.on("connection", socket => {
   console.log("User connected:", socket.id);
 
   socket.on("join-room", (roomId, userId) => {
     socket.join(roomId);
-    console.log(`User ${userId} joined room ${roomId}`);
     socket.to(roomId).emit("user-connected", userId);
-  });
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    socket.on("signal", ({ to, from, signal }) => {
+      io.to(to).emit("signal", { from, signal });
+    });
+
+    socket.on("disconnect", () => {
+      socket.to(roomId).emit("user-disconnected", socket.id);
+      console.log("User disconnected:", socket.id);
+    });
   });
 });
 
