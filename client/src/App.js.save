@@ -1,0 +1,20 @@
+import React, { useEffect, useRef } from "react";
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:3000"); // Connect to backend
+
+function App() {
+  const videoRef = useRef(null);
+  const roomId = "myroom";
+  const userId = Math.floor(Math.random() * 10000);
+
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        addVideoStream(videoRef.current, stream);
+        socket.emit("join-room", roomId, userId);
+
+        socket.on("user-connected", (id) => {
+          console.log("New user connected:", id);
+        });
+      });
